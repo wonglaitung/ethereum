@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>代币活动查询（含铸币/销币）</title>
+  <script src="./web3.min.js"></script>
+</head>
+<body>
+  <h1>代币活动查询（转账/铸币/销币）</h1>
+
+  <!-- 用户输入框 -->
+  <div>
+    <label>合约地址:</label>
+    <input type="text" id="contractAddress" placeholder="0x..." style="width: 100%;">
+  </div>
+  <div>
+    <label>合约 ABI:</label>
+    <textarea id="contractABI" placeholder='[{"inputs":...}]' style="width: 100%; height: 200px;"></textarea>
+  </div>
+  <div>
+    <label>铸币事件名称:</label>
+    <input type="text" id="mintEvent" placeholder="Mint" style="width: 100%;">
+  </div>
+  <div>
+    <label>销币事件名称:</label>
+    <input type="text" id="burnEvent" placeholder="Burn" style="width: 100%;">
+  </div>
+  <button onclick="initContract()">初始化合约</button>
+  <hr>
+
+  <!-- 活动记录展示 -->
+  <div id="records"></div>
+
+  <script>
+    let web3;
+    let contract;
+    const rpcUrl = 'http://localhost:8545'; // 使用本地节点 RPC 地址 [[6]]
+
+    // 初始化 web3 实例
+    function initWeb3() {
+      try {
+        web3 = new Web3(new Web3.providers.HttpProvider(rpcUrl)); // 使用 HttpProvider 连接 [[6]]
+        console.log('已连接到本地节点');
+      } catch (error) {
+        console.error('连接本地节点失败:', error);
+        alert('无法连接到本地节点，请确保节点正在运行');
+      }
+    }
+
+    // 动态初始化合约
+    async function initContract() {
+      initWeb3(); // 初始化 web3 实例
+
+      const address = document.getElementById('contractAddress').value.trim();
+      const abiInput = document.getElementById('contractABI').value.trim();
+      const mintName = document.getElementById('mintEvent').value.trim();
+      const burnName = document.getElementById('burnEvent').value.trim();
+
+      try {
+        // 解析 ABI JSON
+        const abi = JSON.parse(abiInput);
+        contract = new web3.eth.Contract(abi, address);
+        document.getElementById('records').innerHTML = '正在加载记录...';
+
+        // 查询历史活动
+        await Promise.all([
+          getHistoricalTransfers(), 
+          getHistoricalMints(mintName), 
+          getHistoricalBurns(burnName)
+        ]);
+
+        // 监听新事件（轮询机制）
+        watchNewTransfers();
+        watchNewMints(mintName);
+        watchNewBurns(burnName);
+
+      } catch (error) {
+        console.error('初始化合约失败:', error);
+        alert('请检查ABI格式、地址或事件名称是否正确！');
+      }
+    }
+
+    // 查询历史转账记录
+    async function getHistoricalTransfers() {
+      if (!contract) return;
+      try {
+        const events = await contract.getPastEvents('Transfer', {
+          fromBlock: 0,
+          toBlock: 'latest'
+        });
+        displayEvents(events, '转账');
+      } catch (error) {
+        console.error('查询转账记录失败:', error);
+      }
+    }
+
+    // 查询历史铸币记录
+    async function getHistoricalMints(eventName) {
+      if (!contract || !eventName) return;
+      try {
+        const events = await contract.getPastEvents(eventName, {
+          fromBlock: 0,
+          toBlock: 'latest'
+        });
+        displayEvents(events, '铸币');
+      } catch (error) {
+        console.error(`查询铸币记录失败（${eventName}）:`, error);
+      }
+    }
+
+    // 查询历史销币记录
+    async function getHistoricalBurns(eventName) {
+      if (!contract || !eventName) return;
+      try {
+        const events = await contract.getPastEvents(eventName, {
+          fromBlock: 0,
+          toBlock: 'latest'
+        });
+        displayEvents(events, '销币');
+      } catch (error) {
+        console.error(`查询销币记录失败（${eventName}）:`, error);
+      }
+    }
+
+    // 轮询新转账事件（替代 WebSocket 监听）
+    function watchNewTransfers() {
+      if (!contract) return;
+      setInterval(async () => {
+        try {
+          const latestBlock = await web3.eth.getBlockNumber();
+          const events = await contract.getPastEvents('Transfer', {
+            fromBlock: latestBlock,
+            toBlock: latestBlock
+          });
+          displayEvents(events, '转账');
+        } catch (error) {
+          console.error('监听转账事件失败:', error);
+        }
+      }, 10000); // 每 10 秒轮询一次
+    }
+
+    // 轮询新铸币事件
+    function watchNewMints(eventName) {
+      if (!contract || !eventName) return;
+      setInterval(async () => {
+        try {
+          const latestBlock = await web3.eth.getBlockNumber();
+          const events = await contract.getPastEvents(eventName, {
+            fromBlock: latestBlock,
+            toBlock: latestBlock
+          });
+          displayEvents(events, '铸币');
+        } catch (error) {
+          console.error(`监听铸币事件（${eventName}）失败:`, error);
+        }
+      }, 10000);
+    }
+
+    // 轮询新销币事件
+    function watchNewBurns(eventName) {
+      if (!contract || !eventName) return;
+      setInterval(async () => {
+        try {
+          const latestBlock = await web3.eth.getBlockNumber();
+          const events = await contract.getPastEvents(eventName, {
+            fromBlock: latestBlock,
+            toBlock: latestBlock
+          });
+          displayEvents(events, '销币');
+        } catch (error) {
+          console.error(`监听销币事件（${eventName}）失败:`, error);
+        }
+      }, 10000);
+    }
+
+    // 解析并展示事件记录（处理BigInt）
+    function displayEvents(events, type) {
+      const container = document.getElementById('records');
+      events.forEach(event => {
+        const values = event.returnValues;
+        const amountField = values.value || values.amount;
+
+        if (amountField === undefined) {
+          console.warn(`事件缺少value/amount字段: ${type}`);
+          return;
+        }
+
+        const amount = Number(web3.utils.fromWei(amountField.toString(), 'ether')).toFixed(4); 
+        const div = document.createElement('div');
+        let content = '';
+
+        switch (type) {
+          case '转账':
+            content = `转账: ${values.from} → ${values.to}, 金额: ${amount} TOKEN`;
+            break;
+          case '铸币':
+            content = `铸币: 铸造 ${amount} TOKEN 给 ${values.to || values.account}`;
+            break;
+          case '销币':
+            content = `销币: ${values.from} 销毁 ${amount} TOKEN`;
+            break;
+          default:
+            const serialize = (data) => JSON.stringify(data, (key, value) =>
+              typeof value === 'bigint' ? value.toString() : value
+            );
+            content = `${type}: ${serialize(values)}`;
+        }
+
+        div.textContent = `[${type}] ${content}`;
+        container.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

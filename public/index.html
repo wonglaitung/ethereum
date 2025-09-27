@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web3钱包验证</title>
+    <!-- 使用最新稳定版ethers.js (v5.7.2) -->
+    <script src="./ethers.umd.min.js" type="application/javascript"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-top: 20px; }
+        .input-group { margin-bottom: 15px; }
+        input { padding: 8px; width: 100%; max-width: 400px; }
+        button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0069d9; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+        pre { background: #e9ecef; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>验证您的Web3钱包地址</h1>
+    <p>此服务用于验证您是否真正持有提供的Web3钱包地址。签名过程不会产生任何费用或资产转移。</p>
+    
+    <div class="container">
+        <div class="input-group">
+            <label for="walletAddress">请输入您的钱包地址:</label>
+            <input type="text" id="walletAddress" placeholder="例如: 0x1234...">
+            <div id="addressError" class="error" style="display: none;"></div>
+        </div>
+        
+        <button onclick="generateChallenge()">验证地址</button>
+        
+        <div id="status" style="margin-top: 20px;"></div>
+    </div>
+    
+    <script>
+        // 全局变量存储当前挑战
+        let currentChallenge = {
+            id: null,
+            message: null
+        };
+        
+        /**
+         * 验证地址格式
+         * @param {string} address - 钱包地址
+         * @returns {boolean} 是否有效
+         */
+        function validateAddress(address) {
+            // 清理地址
+            const cleanAddress = address.trim();
+            
+            // 检查是否为空
+            if (!cleanAddress) {
+                showError('请输入钱包地址');
+                return false;
+            }
+            
+            // 检查基本格式
+            if (!cleanAddress.startsWith('0x')) {
+                showError('地址必须以"0x"开头');
+                return false;
+            }
+            
+            // 检查长度
+            if (cleanAddress.length !== 42) {
+                showError(`地址长度错误 (${cleanAddress.length} != 42)`);
+                return false;
+            }
+            
+            // 检查十六进制字符
+            if (!/^[0-9a-fA-F]+$/.test(cleanAddress.substring(2))) {
+                showError('地址包含无效字符');
+                return false;
+            }
+            
+            // 清除错误
+            document.getElementById('addressError').style.display = 'none';
+            return true;
+        }
+        
+        /**
+         * 显示错误消息
+         * @param {string} message - 错误消息
+         */
+        function showError(message) {
+            const errorDiv = document.getElementById('addressError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        /**
+         * 生成挑战
+         */
+        async function generateChallenge() {
+            const addressInput = document.getElementById('walletAddress');
+            const address = addressInput.value.trim();
+            const statusDiv = document.getElementById('status');
+            
+            // 验证地址
+            if (!validateAddress(address)) {
+                return;
+            }
+            
+            statusDiv.innerHTML = '正在生成验证挑战...';
+            
+            try {
+                // 请求挑战
+                const response = await fetch('/api/generate-challenge', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ address })
+                });
+                
+                // 检查响应状态
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP错误! 状态: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // 存储挑战信息
+                currentChallenge = {
+                    id: data.challengeId,
+                    message: data.message
+                };
+                
+                // 显示签名界面
+                statusDiv.innerHTML = `
+                    <div style="margin-top: 20px; padding: 15px; border: 1px solid #dee2e6; border-radius: 4px;">
+                        <h3>请使用您的Web3钱包对以下消息进行签名：</h3>
+                        <pre>${data.message}</pre>
+                        <p style="color: #6c757d; font-style: italic;">注意：此操作不会产生任何费用或资产转移</p>
+                        <button onclick="signMessage('${data.challengeId}', '${address}')" style="margin-top: 10px;">
+                            签名并验证
+                        </button>
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">错误: ${error.message}</p>`;
+                console.error('生成挑战错误:', error);
+            }
+        }
+        
+        /**
+         * 签名并验证
+         * @param {string} challengeId - 挑战ID
+         * @param {string} address - 钱包地址
+         */
+        async function signMessage(challengeId, address) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '等待钱包签名...';
+            
+            try {
+                // 检查是否安装了Web3钱包
+                if (typeof window.ethers === 'undefined') {
+                    statusDiv.innerHTML = `<p class="error">错误: 未检测到Web3钱包（如MetaMask）<br>请安装并启用MetaMask等Web3钱包扩展</p>`;
+                    return;
+                }
+                
+                // 检查挑战消息是否存在
+                if (!currentChallenge.message) {
+                    statusDiv.innerHTML = `<p class="error">错误: 挑战消息不存在，请重新生成挑战</p>`;
+                    return;
+                }
+                
+                // 请求用户连接钱包
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                
+                // 获取签名者
+                const signer = provider.getSigner();
+                
+                // 请求签名
+                const signature = await signer.signMessage(currentChallenge.message);
+                
+                // 验证签名
+                const verifyResponse = await fetch('/api/verify-signature', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        challengeId: currentChallenge.id,
+                        address: address,
+                        signature: signature
+                    })
+                });
+                
+                const verifyData = await verifyResponse.json();
+                
+                if (verifyData.success) {
+                    statusDiv.innerHTML = `<p class="success" style="font-weight: bold;">钱包地址验证成功！</p>
+                                          <p>已验证地址: ${verifyData.address}</p>
+                                          <p>此地址确实由您持有</p>`;
+                } else {
+                    statusDiv.innerHTML = `<p class="error">验证失败: ${verifyData.message}</p>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">签名过程出错: ${error.message}</p>`;
+                console.error('签名错误:', error);
+            }
+        }
+    </script>
+</body>
+</html>

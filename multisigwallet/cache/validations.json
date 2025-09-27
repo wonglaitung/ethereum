@@ -1,0 +1,143 @@
+{
+  "version": "3.4",
+  "log": [
+    {
+      "contracts/MultiSigWallet.sol:MultiSigWallet": {
+        "src": "contracts/MultiSigWallet.sol:11",
+        "version": {
+          "withMetadata": "2f954275f60f9858ace1d9ff3c808973d342229ecaea0ee5f84b4d5cb6ced899",
+          "withoutMetadata": "1b581fd5705fb4f0257cdc33f15e3515d05fcef43744be1c95f1803258ea5b33",
+          "linkedWithoutMetadata": "1b581fd5705fb4f0257cdc33f15e3515d05fcef43744be1c95f1803258ea5b33"
+        },
+        "inherit": [],
+        "libraries": [],
+        "methods": [
+          "(address[],uint256)",
+          "isOwner(address)",
+          "getConfirmationCount(uint256)",
+          "isTransactionConfirmed(uint256)",
+          "submitTransaction(address,uint256,bytes)",
+          "confirmTransaction(uint256)",
+          "executeTransactionInternal(uint256)",
+          "executeTransaction(uint256)",
+          "revokeConfirmation(uint256)",
+          "changeOwners(address[],uint256)",
+          "()",
+          "getTransactionCount()"
+        ],
+        "linkReferences": [],
+        "errors": [
+          {
+            "kind": "constructor",
+            "contract": "MultiSigWallet",
+            "src": "contracts/MultiSigWallet.sol:74"
+          }
+        ],
+        "layout": {
+          "storage": [
+            {
+              "label": "owners",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_array(t_address)dyn_storage",
+              "contract": "MultiSigWallet",
+              "src": "contracts/MultiSigWallet.sol:25"
+            },
+            {
+              "label": "numConfirmationsRequired",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_uint256",
+              "contract": "MultiSigWallet",
+              "src": "contracts/MultiSigWallet.sol:28"
+            },
+            {
+              "label": "isConfirmed",
+              "offset": 0,
+              "slot": "2",
+              "type": "t_mapping(t_uint256,t_mapping(t_address,t_bool))",
+              "contract": "MultiSigWallet",
+              "src": "contracts/MultiSigWallet.sol:41"
+            },
+            {
+              "label": "transactions",
+              "offset": 0,
+              "slot": "3",
+              "type": "t_array(t_struct(Transaction)63_storage)dyn_storage",
+              "contract": "MultiSigWallet",
+              "src": "contracts/MultiSigWallet.sol:46"
+            }
+          ],
+          "types": {
+            "t_address": {
+              "label": "address",
+              "numberOfBytes": "20"
+            },
+            "t_array(t_address)dyn_storage": {
+              "label": "address[]",
+              "numberOfBytes": "32"
+            },
+            "t_array(t_struct(Transaction)63_storage)dyn_storage": {
+              "label": "struct MultiSigWallet.Transaction[]",
+              "numberOfBytes": "32"
+            },
+            "t_bool": {
+              "label": "bool",
+              "numberOfBytes": "1"
+            },
+            "t_bytes_storage": {
+              "label": "bytes",
+              "numberOfBytes": "32"
+            },
+            "t_mapping(t_address,t_bool)": {
+              "label": "mapping(address => bool)",
+              "numberOfBytes": "32"
+            },
+            "t_mapping(t_uint256,t_mapping(t_address,t_bool))": {
+              "label": "mapping(uint256 => mapping(address => bool))",
+              "numberOfBytes": "32"
+            },
+            "t_struct(Transaction)63_storage": {
+              "label": "struct MultiSigWallet.Transaction",
+              "members": [
+                {
+                  "label": "to",
+                  "type": "t_address",
+                  "offset": 0,
+                  "slot": "0"
+                },
+                {
+                  "label": "value",
+                  "type": "t_uint256",
+                  "offset": 0,
+                  "slot": "1"
+                },
+                {
+                  "label": "data",
+                  "type": "t_bytes_storage",
+                  "offset": 0,
+                  "slot": "2"
+                },
+                {
+                  "label": "executed",
+                  "type": "t_bool",
+                  "offset": 0,
+                  "slot": "3"
+                }
+              ],
+              "numberOfBytes": "128"
+            },
+            "t_uint256": {
+              "label": "uint256",
+              "numberOfBytes": "32"
+            }
+          },
+          "layoutVersion": "1.2",
+          "flat": true,
+          "namespaces": {}
+        },
+        "solcVersion": "0.8.0"
+      }
+    }
+  ]
+}

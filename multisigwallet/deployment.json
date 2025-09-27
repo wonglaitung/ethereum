@@ -1,0 +1,11 @@
+{
+  "address": "0x0b02FBa3906956A3d027cdd0fB57870d37ec1230",
+  "owners": [
+    "0x0BA2759Afc86266ECedfb89f17A232ebEbfD54fa",
+    "0xd2d4Aa06777a7450f324e61aB02c3919147618d5",
+    "0x49Fc631703978D72f408D2FBc8Cd07E81aB532c7"
+  ],
+  "numConfirmationsRequired": 2,
+  "deployedAt": "2025-08-14T13:35:49.001Z"
+}
+

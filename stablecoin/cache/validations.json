@@ -1,0 +1,157 @@
+{
+  "version": "3.4",
+  "log": [
+    {
+      "contracts/TokenERC20.sol:TokenERC20": {
+        "src": "contracts/TokenERC20.sol:8",
+        "version": {
+          "withMetadata": "f637faf08e52d12e6728740b6af0c8d4792e277325e69cc2e8060a93f6a21501",
+          "withoutMetadata": "b5cc4ad59a25e73070acdf73561e8bf20f7e13c7813062bc352fe35a81e12e9c",
+          "linkedWithoutMetadata": "b5cc4ad59a25e73070acdf73561e8bf20f7e13c7813062bc352fe35a81e12e9c"
+        },
+        "inherit": [],
+        "libraries": [],
+        "methods": [
+          "(uint256,string,string)",
+          "transferOwnership(address)",
+          "transfer(address,uint256)",
+          "transferFrom(address,address,uint256)",
+          "approve(address,uint256)",
+          "approveAndCall(address,uint256,bytes)",
+          "mint(address,uint256)",
+          "burn(uint256)",
+          "burnFrom(address,uint256)"
+        ],
+        "linkReferences": [],
+        "errors": [
+          {
+            "kind": "constructor",
+            "contract": "TokenERC20",
+            "src": "contracts/TokenERC20.sol:46"
+          },
+          {
+            "kind": "state-variable-assignment",
+            "name": "decimals",
+            "src": "contracts/TokenERC20.sol:12"
+          }
+        ],
+        "layout": {
+          "storage": [
+            {
+              "label": "name",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_string_storage",
+              "contract": "TokenERC20",
+              "src": "contracts/TokenERC20.sol:10"
+            },
+            {
+              "label": "symbol",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_string_storage",
+              "contract": "TokenERC20",
+              "src": "contracts/TokenERC20.sol:11"
+            },
+            {
+              "label": "decimals",
+              "offset": 0,
+              "slot": "2",
+              "type": "t_uint8",
+              "contract": "TokenERC20",
+              "src": "contracts/TokenERC20.sol:12"
+            },
+            {
+              "label": "totalSupply",
+              "offset": 0,
+              "slot": "3",
+              "type": "t_uint256",
+              "contract": "TokenERC20",
+              "src": "contracts/TokenERC20.sol:13"
+            },
+            {
+              "label": "initialSupply",
+              "offset": 0,
+              "slot": "4",
+              "type": "t_uint256",
+              "contract": "TokenERC20",
+              "src": "contracts/TokenERC20.sol:14"
+            },
+            {
+              "label": "owner",
+              "offset": 0,
+              "slot": "5",
+              "type": "t_address",
+              "contract": "TokenERC20",
+              "src": "contracts/TokenERC20.sol:17"
+            },
+            {
+              "label": "balanceOf",
+              "offset": 0,
+              "slot": "6",
+              "type": "t_mapping(t_address,t_uint256)",
+              "contract": "TokenERC20",
+              "src": "contracts/TokenERC20.sol:20"
+            },
+            {
+              "label": "allowance",
+              "offset": 0,
+              "slot": "7",
+              "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+              "contract": "TokenERC20",
+              "src": "contracts/TokenERC20.sol:21"
+            }
+          ],
+          "types": {
+            "t_address": {
+              "label": "address",
+              "numberOfBytes": "20"
+            },
+            "t_mapping(t_address,t_mapping(t_address,t_uint256))": {
+              "label": "mapping(address => mapping(address => uint256))",
+              "numberOfBytes": "32"
+            },
+            "t_mapping(t_address,t_uint256)": {
+              "label": "mapping(address => uint256)",
+              "numberOfBytes": "32"
+            },
+            "t_string_storage": {
+              "label": "string",
+              "numberOfBytes": "32"
+            },
+            "t_uint256": {
+              "label": "uint256",
+              "numberOfBytes": "32"
+            },
+            "t_uint8": {
+              "label": "uint8",
+              "numberOfBytes": "1"
+            }
+          },
+          "layoutVersion": "1.2",
+          "flat": true,
+          "namespaces": {}
+        },
+        "solcVersion": "0.8.0"
+      },
+      "contracts/TokenERC20.sol:tokenRecipient": {
+        "src": "contracts/TokenERC20.sol:4",
+        "inherit": [],
+        "libraries": [],
+        "methods": [
+          "receiveApproval(address,uint256,address,bytes)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false,
+          "namespaces": {}
+        },
+        "solcVersion": "0.8.0"
+      }
+    }
+  ]
+}

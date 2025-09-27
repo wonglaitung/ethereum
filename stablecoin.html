@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>代币合约测试</title>
+  <script src="./web3.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input, button, textarea { margin: 5px 0; padding: 5px; width: 100%; }
+    .section { border-top: 1px solid #ccc; margin-top: 20px; padding-top: 10px; }
+    textarea { height: 100px; }
+  </style>
+</head>
+<body>
+
+  <h2>代币合约测试 (ERC20)</h2>
+  <p id="account"></p>
+
+  <div class="section">
+    <h3>Set Contract Info</h3>
+    <input type="text" id="contractAddress" placeholder="Enter Contract Address" />
+    <textarea id="contractABI" placeholder="Paste Contract ABI here (JSON format)"></textarea>
+    <button onclick="loadContract()">Load Contract</button>
+    <p id="contractStatus"></p>
+  </div>
+
+  <div class="section">
+    <h3>Contract Info</h3>
+    <button onclick="getName()">Get Name</button>
+    <button onclick="getSymbol()">Get Symbol</button>
+    <button onclick="getDecimals()">Get Decimals</button>
+    <button onclick="getTotalSupply()">Get Total Supply</button>
+    <p id="infoOutput"></p>
+  </div>
+
+  <div class="section">
+    <h3>Balance Of</h3>
+    <input type="text" id="balanceAddress" placeholder="Enter Address" />
+    <button onclick="getBalance()">Get Balance</button>
+    <p id="balanceOutput"></p>
+  </div>
+
+  <div class="section">
+    <h3>Transfer Tokens</h3>
+    <input type="text" id="transferTo" placeholder="Recipient Address" />
+    <input type="number" id="transferValue" placeholder="Amount to Transfer" />
+    <button onclick="transferTokens()">Transfer</button>
+    <p id="transferOutput"></p>
+  </div>
+
+  <div class="section">
+    <h3>Approve</h3>
+    <input type="text" id="approveSpender" placeholder="Spender Address" />
+    <input type="number" id="approveValue" placeholder="Value to Approve" />
+    <button onclick="approve()">Approve</button>
+    <p id="approveOutput"></p>
+  </div>
+
+  <div class="section">
+    <h3>Transfer From</h3>
+    <input type="text" id="transferFrom" placeholder="From Address" />
+    <input type="text" id="transferToAddr" placeholder="To Address" />
+    <input type="number" id="transferFromValue" placeholder="Amount" />
+    <button onclick="transferFrom()">Transfer From</button>
+    <p id="transferFromOutput"></p>
+  </div>
+
+  <div class="section">
+    <h3>Burn</h3>
+    <input type="number" id="burnValue" placeholder="Amount to Burn" />
+    <button onclick="burn()">Burn</button>
+    <p id="burnOutput"></p>
+  </div>
+
+  <div class="section">
+    <h3>Burn From</h3>
+    <input type="text" id="burnFromAddress" placeholder="Address to Burn From" />
+    <input type="number" id="burnFromValue" placeholder="Amount to Burn" />
+    <button onclick="burnFrom()">Burn From</button>
+    <p id="burnFromOutput"></p>
+  </div>
+
+  <script>
+    let web3;
+    let account;
+    let tokenContract;
+
+    async function connectMetaMask() {
+      if (window.ethereum) {
+        web3 = new Web3(window.ethereum);
+        await ethereum.request({ method: 'eth_requestAccounts' });
+        account = (await web3.eth.getAccounts())[0];
+        document.getElementById("account").innerText = "Connected Account: " + account;
+      } else {
+        alert('Please install MetaMask!');
+      }
+    }
+
+    connectMetaMask();
+
+    // Load contract from user input
+    function loadContract() {
+      const abiText = document.getElementById("contractABI").value;
+      const address = document.getElementById("contractAddress").value;
+
+      try {
+        const abi = JSON.parse(abiText);
+        tokenContract = new web3.eth.Contract(abi, address);
+        document.getElementById("contractStatus").innerText = "✅ Contract loaded successfully.";
+      } catch (e) {
+        alert("Invalid ABI or Address");
+        console.error(e);
+      }
+    }
+
+    // Helper: format balance
+    function formatBalance(balance, decimals) {
+      return web3.utils.fromWei(balance.toString(), 'ether');
+    }
+
+    // Getters
+    async function getName() {
+      const name = await tokenContract.methods.name().call();
+      document.getElementById("infoOutput").innerText = "Name: " + name;
+    }
+
+    async function getSymbol() {
+      const symbol = await tokenContract.methods.symbol().call();
+      document.getElementById("infoOutput").innerText = "Symbol: " + symbol;
+    }
+
+    async function getDecimals() {
+      const decimals = await tokenContract.methods.decimals().call();
+      document.getElementById("infoOutput").innerText = "Decimals: " + decimals;
+    }
+
+    async function getTotalSupply() {
+      const supply = await tokenContract.methods.totalSupply().call();
+      const decimals = await tokenContract.methods.decimals().call();
+      document.getElementById("infoOutput").innerText = "Total Supply: " + formatBalance(supply, decimals);
+    }
+
+    async function getBalance() {
+      const addr = document.getElementById("balanceAddress").value;
+      const balance = await tokenContract.methods.balanceOf(addr).call();
+      const decimals = await tokenContract.methods.decimals().call();
+      document.getElementById("balanceOutput").innerText = "Balance: " + formatBalance(balance, decimals);
+    }
+
+    async function transferTokens() {
+      const to = document.getElementById("transferTo").value;
+      const value = web3.utils.toWei(document.getElementById("transferValue").value, 'ether');
+      await tokenContract.methods.transfer(to, value).send({ from: account,
+	      gas: 6000000,  // 增加 gas 上限以避免部署失败
+              gasPrice: 1000000000 });
+      document.getElementById("transferOutput").innerText = "✅ Transfer successful!";
+    }
+
+    async function approve() {
+      const spender = document.getElementById("approveSpender").value;
+      const value = web3.utils.toWei(document.getElementById("approveValue").value, 'ether');
+      await tokenContract.methods.approve(spender, value).send({ from: account,
+	      gas: 6000000,  // 增加 gas 上限以避免部署失败
+              gasPrice: 1000000000 });
+      document.getElementById("approveOutput").innerText = "✅ Approval successful!";
+    }
+
+    async function transferFrom() {
+      const from = document.getElementById("transferFrom").value;
+      const to = document.getElementById("transferToAddr").value;
+      const value = web3.utils.toWei(document.getElementById("transferFromValue").value, 'ether');
+      await tokenContract.methods.transferFrom(from, to, value).send({ from: account,
+	      gas: 6000000,  // 增加 gas 上限以避免部署失败
+              gasPrice: 1000000000 });
+      document.getElementById("transferFromOutput").innerText = "✅ TransferFrom successful!";
+    }
+
+    async function burn() {
+      const value = web3.utils.toWei(document.getElementById("burnValue").value, 'ether');
+      await tokenContract.methods.burn(value).send({ from: account,
+	      gas: 6000000,  // 增加 gas 上限以避免部署失败
+              gasPrice: 1000000000 });
+      document.getElementById("burnOutput").innerText = "✅ Burn successful!";
+    }
+
+    async function burnFrom() {
+      const from = document.getElementById("burnFromAddress").value;
+      const value = web3.utils.toWei(document.getElementById("burnFromValue").value, 'ether');
+      await tokenContract.methods.burnFrom(from, value).send({ from: account,
+	      gas: 6000000,  // 增加 gas 上限以避免部署失败
+              gasPrice: 1000000000 });
+      document.getElementById("burnFromOutput").innerText = "✅ BurnFrom successful!";
+    }
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>区块链账户余额查询与转账</title>
+  <!-- 引入最新版 web3.js CDN -->
+  <script src="./web3.min.js"></script>
+</head>
+<body>
+  <h1>区块链账户余额查询与转账</h1>
+
+  <!-- 查询余额部分 -->
+  <h2>查询账户余额</h2>
+  <label for="accountAddress">请输入账户地址：</label>
+  <input type="text" id="accountAddress" placeholder="0x..." />
+  <button onclick="getBalance()">查询余额</button>
+  <p id="balanceResult"></p>
+
+  <!-- 转账功能部分 -->
+  <h2>转账功能</h2>
+  <label for="fromAddress">发送地址：</label>
+  <input type="text" id="fromAddress" placeholder="0x..." /><br />
+
+  <label for="toAddress">接收地址：</label>
+  <input type="text" id="toAddress" placeholder="0x..." /><br />
+
+  <label for="amount">转账金额（ETH）：</label>
+  <input type="number" id="amount" placeholder="0.1" step="0.01" /><br />
+
+  <button onclick="sendTransaction()">发送转账</button>
+  <p id="txResult"></p>
+
+  <script>
+    let web3 = null; // 全局 web3 实例
+    let accounts = []; // 当前连接的钱包地址
+
+    // 等待 DOM 加载完成
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 检测钱包是否存在
+      if (typeof window.ethereum === 'undefined') {
+        alert('请安装 Web3 钱包（如 MetaMask）');
+        return;
+      }
+
+      // 初始化 web3 实例
+      web3 = new Web3(window.ethereum);
+
+      // 请求连接钱包
+      try {
+        accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        console.log('钱包已连接:', accounts[0]);
+        
+        // 监听账户切换
+        window.ethereum.on('accountsChanged', (newAccounts) => {
+          accounts = newAccounts;
+          console.log('账户已切换:', accounts[0]);
+        });
+      } catch (error) {
+        console.error('用户拒绝连接钱包:', error);
+        alert('未授权钱包访问权限');
+      }
+    });
+
+    // 查询余额函数
+    async function getBalance() {
+      if (!web3) {
+        alert('请先连接钱包');
+        return;
+      }
+
+      const addressInput = document.getElementById('accountAddress');
+      const result = document.getElementById('balanceResult');
+      const address = addressInput.value.trim();
+
+      if (!address) {
+        result.textContent = '请输入账户地址。';
+        return;
+      }
+
+      if (!Web3.utils.isAddress(address)) {
+        result.textContent = '地址格式不正确。';
+        return;
+      }
+
+      result.textContent = '正在查询...';
+
+      try {
+        const balance = await web3.eth.getBalance(address);
+        result.textContent = `账户 ${address} 的余额为：${web3.utils.fromWei(balance, 'ether')} ETH`;
+      } catch (error) {
+        console.error('查询失败:', error);
+        result.textContent = '查询失败，请检查地址或节点是否正常运行。';
+      }
+    }
+
+    // 发送转账函数
+    async function sendTransaction() {
+      if (!web3 || accounts.length === 0) {
+        alert('请先连接钱包');
+        return;
+      }
+
+      const from = document.getElementById('fromAddress').value.trim();
+      const to = document.getElementById('toAddress').value.trim();
+      const amount = document.getElementById('amount').value.trim();
+      const result = document.getElementById('txResult');
+
+      if (!Web3.utils.isAddress(from) || !Web3.utils.isAddress(to)) {
+        result.textContent = '发送或接收地址格式不正确。';
+        return;
+      }
+
+      if (isNaN(amount) || parseFloat(amount) <= 0) {
+        result.textContent = '请输入有效的转账金额。';
+        return;
+      }
+
+      result.textContent = '正在发送交易...';
+
+      try {
+        // 构建交易对象
+        const transactionObject = {
+          from: accounts[0], // 使用连接的钱包地址作为发送方
+          to: to,
+          value: web3.utils.toWei(amount, 'ether'),
+          gas: 21000, // 默认转账 gas 限制
+        };
+
+        // 发送交易（MetaMask 会自动弹出确认窗口）
+        const txHash = await web3.eth.sendTransaction(transactionObject);
+        result.textContent = `交易已提交，交易哈希：${txHash.transactionHash}`;
+      } catch (error) {
+        console.error('转账失败:', error);
+        result.textContent = '转账失败，请检查地址或余额是否充足。';
+      }
+    }
+
+    // 暴露函数给全局作用域
+    window.getBalance = getBalance;
+    window.sendTransaction = sendTransaction;
+  </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>区块链合约部署与调用</title>
+  <script src="./web3.min.js"></script>
+</head>
+<body>
+  <h1>区块链合约部署与调用</h1>
+
+  <!-- 部署合约部分 -->
+  <h2>部署合约</h2>
+  <label for="contractBytecode">合约字节码（Bytecode）：</label><br />
+  <textarea id="contractBytecode" rows="4" cols="100" placeholder="0x6080..."></textarea><br />
+
+  <label for="contractAbi">合约 ABI：</label><br />
+  <textarea id="contractAbi" rows="4" cols="100" placeholder='[{"constant":true,"inputs":[{"name":"a","type":"uint256"}],"name":"multiply","outputs":[{"name":"d","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]'></textarea><br />
+
+  <label for="initialSupply">初始供应量（Initial Supply）：</label><br />
+  <input type="number" id="initialSupply" /><br />
+
+  <label for="tokenName">代币名称（Token Name）：</label><br />
+  <input type="text" id="tokenName" /><br />
+
+  <label for="tokenSymbol">代币符号（Token Symbol）：</label><br />
+  <input type="text" id="tokenSymbol" /><br />
+
+  <label for="deployerAddress">部署者地址：</label>
+  <input type="text" id="deployerAddress" placeholder="0x..." /><br />
+
+  <button onclick="deployContract()">部署合约</button>
+  <p id="deployResult"></p>
+
+  <!-- 调用合约方法部分 -->
+  <h2>调用合约方法</h2>
+  <label for="contractAddress">合约地址：</label>
+  <input type="text" id="contractAddress" placeholder="0x..." /><br />
+
+  <label for="contractAbiCall">合约 ABI：</label><br />
+  <textarea id="contractAbiCall" rows="4" cols="100" placeholder='[{"constant":true,"inputs":[{"name":"a","type":"uint256"}],"name":"multiply","outputs":[{"name":"d","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]'></textarea><br />
+
+  <label for="methodName">方法名称：</label>
+  <input type="text" id="methodName" placeholder="balanceOf" /><br />
+
+  <label for="methodParams">方法参数（JSON 格式）：</label><br />
+  <textarea id="methodParams" rows="2" cols="50" placeholder='["123"]'></textarea><br />
+
+  <button onclick="callContractMethod()">调用方法</button>
+  <p id="callResult"></p>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const rpcUrl = 'http://localhost:8545'; // 本地节点 RPC 地址
+      const web3 = new Web3(new Web3.providers.HttpProvider(rpcUrl));
+
+      // 部署合约函数
+      async function deployContract() {
+        const bytecode = document.getElementById('contractBytecode').value.trim();
+        const abi = document.getElementById('contractAbi').value.trim();
+        const deployer = document.getElementById('deployerAddress').value.trim();
+        const initialSupply = document.getElementById('initialSupply').value.trim();
+        const tokenName = document.getElementById('tokenName').value.trim();
+        const tokenSymbol = document.getElementById('tokenSymbol').value.trim();
+        const result = document.getElementById('deployResult');
+
+        if (!bytecode || !abi || !deployer || !initialSupply || !tokenName || !tokenSymbol) {
+          result.textContent = '请填写所有字段。';
+          return;
+        }
+
+        if (!Web3.utils.isAddress(deployer)) {
+          result.textContent = '部署者地址格式不正确。';
+          return;
+        }
+
+        try {
+          const contract = new web3.eth.Contract(JSON.parse(abi));
+
+          result.textContent = '正在部署合约...';
+
+          const contractInstance = await contract.deploy({
+             data: bytecode,
+            arguments: [
+              parseInt(initialSupply),  // uint256
+              tokenName,                // string
+              tokenSymbol               // string
+            ]
+          }).send({
+            from: deployer,
+            gas: 6000000,  // 增加 gas 上限以避免部署失败
+            gasPrice: 1000000000
+          });
+
+          result.textContent = `合约部署成功！地址：${contractInstance.options.address}`;
+        } catch (error) {
+          console.error('部署失败:', error);
+          result.textContent = '部署失败，请检查字节码、ABI 或 Gas 是否充足。';
+        }
+      }
+
+      // 调用合约方法函数
+      async function callContractMethod() {
+        const address = document.getElementById('contractAddress').value.trim();
+        const abi = document.getElementById('contractAbiCall').value.trim();
+        const methodName = document.getElementById('methodName').value.trim();
+        const params = document.getElementById('methodParams').value.trim();
+        const result = document.getElementById('callResult');
+
+        if (!address || !abi || !methodName) {
+          result.textContent = '请填写所有字段。';
+          return;
+        }
+
+        if (!Web3.utils.isAddress(address)) {
+          result.textContent = '合约地址格式不正确。';
+          return;
+        }
+
+        try {
+          const contract = new web3.eth.Contract(JSON.parse(abi), address);
+          const parsedParams = params ? JSON.parse(params) : [];
+
+          const output = await contract.methods[methodName](...parsedParams).call();
+          const serialize = (data) => JSON.stringify(data, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          );
+          result.textContent = `调用结果：${serialize(output)}`;          
+        } catch (error) {
+          console.error('调用失败:', error);
+          result.textContent = '调用失败，请检查 ABI、地址或方法参数是否正确。';
+        }
+      }
+
+      window.deployContract = deployContract;
+      window.callContractMethod = callContractMethod;
+    });
+  </script>
+</body>
+</html>
+
